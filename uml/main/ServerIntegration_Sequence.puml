@@ -1,0 +1,51 @@
+@startuml
+skinparam dpi 300
+
+actor Client
+participant "Go API Server" as Server
+participant "handleSignTest()" as SignTest
+participant "handleSubmit()" as Submit
+participant "handleGetMessages()" as GetMessages
+participant "verify()" as Verify
+participant "encoding/json" as JSON
+
+== 서명 테스트 플로우 ==
+Client -> Server: GET /sign-test
+Server -> SignTest: 호출
+SignTest -> SignTest: ECDSA 키 생성
+SignTest -> SignTest: 메시지 생성 및 서명
+SignTest -> JSON: json.Marshal()
+JSON --> SignTest: msgBytes
+SignTest -> JSON: json.NewEncoder().Encode()
+JSON --> SignTest: JSON 응답 데이터
+SignTest --> Server: SignedMessage
+Server --> Client: JSON 응답
+
+== 메시지 제출 플로우 ==
+Client -> Server: POST /submit
+Server -> Submit: 호출
+Submit -> JSON: json.NewDecoder().Decode()
+JSON --> Submit: SignedMessage
+Submit -> JSON: json.Marshal()
+JSON --> Submit: msgBytes
+Submit -> Verify: verify() 호출
+Verify --> Submit: 검증 결과
+alt 검증 성공
+    Submit -> Submit: 메시지 저장
+    Submit --> Server: 성공 응답
+    Server --> Client: 201 Created
+else 검증 실패
+    Submit --> Server: 오류 응답
+    Server --> Client: 401 Unauthorized
+end
+
+== 메시지 조회 플로우 ==
+Client -> Server: GET /messages
+Server -> GetMessages: 호출
+GetMessages -> GetMessages: 저장된 메시지 조회
+GetMessages -> JSON: json.NewEncoder().Encode()
+JSON --> GetMessages: JSON 응답 데이터
+GetMessages --> Server: 메시지 목록
+Server --> Client: JSON 응답
+
+@enduml

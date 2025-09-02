@@ -1,0 +1,29 @@
+@startuml
+skinparam dpi 300
+
+actor Client
+participant "Go API Server" as Server
+
+== handleGetMessages 실행 ==
+Client -> Server: GET /messages
+Server -> Server: handleGetMessages() 시작
+Server -> Server: HTTP 메서드 검증
+alt GET 메서드
+    Server -> Server: 뮤텍스 Lock
+    Server -> Server: Content-Type 헤더 설정
+    Server -> Server: CORS 헤더 설정
+    Server -> Server: verifiedMessages 길이 확인
+    alt 메시지 존재
+        Server -> Server: JSON 인코딩
+        Server -> Server: 뮤텍스 Unlock
+        Server --> Client: 메시지 목록 JSON
+    else 메시지 없음
+        Server -> Server: 빈 배열 응답
+        Server -> Server: 뮤텍스 Unlock
+        Server --> Client: []
+    end
+else 잘못된 메서드
+    Server --> Client: 405 Method Not Allowed
+end
+
+@enduml
