@@ -1,0 +1,31 @@
+@startuml
+skinparam dpi 300
+
+actor Client
+participant "Go API Server" as Server
+
+== verify 함수 실행 ==
+Client -> Server: verify() 함수 호출
+Server -> Server: verify() 시작
+Server -> Server: 공개키 16진수 디코딩
+alt 공개키 디코딩 성공
+    Server -> Server: 서명 16진수 디코딩
+    alt 서명 디코딩 성공
+        Server -> Server: elliptic.P256() 커브 생성
+        Server -> Server: elliptic.Unmarshal() 호출
+        alt 공개키 복원 성공
+            Server -> Server: ECDSA 공개키 객체 생성
+            Server -> Server: SHA256 해시 계산
+            Server -> Server: ECDSA 서명 검증
+            Server --> Client: 검증 결과 (bool)
+        else 공개키 복원 실패
+            Server --> Client: false
+        end
+    else 서명 디코딩 실패
+        Server --> Client: false
+    end
+else 공개키 디코딩 실패
+    Server --> Client: false
+end
+
+@enduml

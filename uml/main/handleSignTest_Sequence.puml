@@ -1,0 +1,29 @@
+@startuml
+skinparam dpi 300
+
+actor Client
+participant "Go API Server" as Server
+
+== handleSignTest 실행 ==
+Client -> Server: GET /sign-test
+Server -> Server: handleSignTest() 시작
+Server -> Server: ECDSA 키 쌍 생성
+alt 키 생성 성공
+    Server -> Server: 공개키 바이트 변환
+    Server -> Server: 테스트 메시지 생성
+    Server -> Server: 메시지 JSON 마샬링
+    Server -> Server: 메시지 해시 계산
+    Server -> Server: ECDSA 서명 생성
+    alt 서명 생성 성공
+        Server -> Server: SignedMessage 객체 생성
+        Server -> Server: JSON 응답 헤더 설정
+        Server -> Server: JSON 인코딩 및 응답
+        Server --> Client: SignedMessage JSON
+    else 서명 생성 실패
+        Server --> Client: 500 Internal Server Error
+    end
+else 키 생성 실패
+    Server --> Client: 500 Internal Server Error
+end
+
+@enduml
